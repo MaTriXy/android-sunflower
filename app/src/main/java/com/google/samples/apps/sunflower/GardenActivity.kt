@@ -16,67 +16,52 @@
 
 package com.google.samples.apps.sunflower
 
-import android.content.res.Configuration
 import android.os.Bundle
-import android.support.design.widget.NavigationView
-import android.support.v4.widget.DrawerLayout
-import android.support.v7.app.ActionBarDrawerToggle
-import android.support.v7.app.AppCompatActivity
-import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.databinding.DataBindingUtil
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.navigation.NavController
 import androidx.navigation.Navigation
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.google.samples.apps.sunflower.databinding.ActivityGardenBinding
 
 class GardenActivity : AppCompatActivity() {
 
     private lateinit var drawerLayout: DrawerLayout
-    private lateinit var drawerToggle: ActionBarDrawerToggle
+    private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_garden)
-        setupToolbar()
-        setupNavigationDrawer()
+
+        val binding: ActivityGardenBinding = DataBindingUtil.setContentView(this,
+                R.layout.activity_garden)
+        drawerLayout = binding.drawerLayout
+
+        navController = Navigation.findNavController(this, R.id.garden_nav_fragment)
+        appBarConfiguration = AppBarConfiguration(navController.graph, drawerLayout)
+
+        // Set up ActionBar
+        setSupportActionBar(binding.toolbar)
+        setupActionBarWithNavController(navController, appBarConfiguration)
+
+        // Set up navigation menu
+        binding.navigationView.setupWithNavController(navController)
     }
 
-    private fun setupToolbar() {
-        setSupportActionBar(findViewById(R.id.toolbar))
-        supportActionBar?.run {
-            setDisplayHomeAsUpEnabled(true)
-            setHomeButtonEnabled(true)
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
         }
-    }
-
-    private fun setupNavigationDrawer() {
-        drawerLayout = findViewById(R.id.drawer_layout)
-        drawerToggle = ActionBarDrawerToggle(
-                this, drawerLayout, R.string.drawer_open, R.string.drawer_close)
-        drawerLayout.addDrawerListener(drawerToggle)
-        val navController = Navigation.findNavController(this, R.id.garden_nav_fragment)
-        findViewById<NavigationView>(R.id.navigation_view).setupWithNavController(navController)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // The action bar home/up action should open or close the drawer.
-        // [ActionBarDrawerToggle] will take care of this.
-        if (drawerToggle.onOptionsItemSelected(item)) {
-            return true
-        }
-        return super.onOptionsItemSelected(item)
-    }
-
-    /**
-     * If [ActionBarDrawerToggle] is used, it must be called in [onPostCreate] and
-     * [onConfigurationChanged].
-     */
-    override fun onPostCreate(savedInstanceState: Bundle?) {
-        super.onPostCreate(savedInstanceState)
-        // Sync the toggle state after has occurred.
-        drawerToggle.syncState()
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration?) {
-        super.onConfigurationChanged(newConfig)
-        // Pass any configuration change to the drawer toggle.
-        drawerToggle.onConfigurationChanged(newConfig)
     }
 }

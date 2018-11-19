@@ -16,10 +16,10 @@
 
 package com.google.samples.apps.sunflower.viewmodels
 
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.MutableLiveData
-import android.arch.lifecycle.Transformations
-import android.arch.lifecycle.ViewModel
+import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
+import androidx.lifecycle.ViewModel
 import com.google.samples.apps.sunflower.PlantListFragment
 import com.google.samples.apps.sunflower.data.Plant
 import com.google.samples.apps.sunflower.data.PlantRepository
@@ -28,23 +28,27 @@ import com.google.samples.apps.sunflower.data.PlantRepository
  * The ViewModel for [PlantListFragment].
  */
 class PlantListViewModel internal constructor(
-        private val plantRepository: PlantRepository
+    private val plantRepository: PlantRepository
 ) : ViewModel() {
 
-    private val NO_GROW_ZONE = -1
-    private val growZoneNumber: MutableLiveData<Int> = MutableLiveData()
+    private val growZoneNumber = MutableLiveData<Int>()
+
+    private val plantList = MediatorLiveData<List<Plant>>()
 
     init {
         growZoneNumber.value = NO_GROW_ZONE
+
+        val livePlantList = Transformations.switchMap(growZoneNumber) {
+            if (it == NO_GROW_ZONE) {
+                plantRepository.getPlants()
+            } else {
+                plantRepository.getPlantsWithGrowZoneNumber(it)
+            }
+        }
+        plantList.addSource(livePlantList, plantList::setValue)
     }
 
-    fun getPlants(): LiveData<List<Plant>> = Transformations.switchMap(growZoneNumber) {
-        if (it == NO_GROW_ZONE) {
-            plantRepository.getPlants()
-        } else {
-            plantRepository.getPlantsWithGrowZoneNumber(it)
-        }
-    }
+    fun getPlants() = plantList
 
     fun setGrowZoneNumber(num: Int) {
         growZoneNumber.value = num
@@ -52,5 +56,11 @@ class PlantListViewModel internal constructor(
 
     fun clearGrowZoneNumber() {
         growZoneNumber.value = NO_GROW_ZONE
+    }
+
+    fun isFiltered() = growZoneNumber.value != NO_GROW_ZONE
+
+    companion object {
+        private const val NO_GROW_ZONE = -1
     }
 }
